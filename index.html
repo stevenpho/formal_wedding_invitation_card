@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name="robots" content="noindex"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <link rel="preload" as="image" href="images/env2_pocket.webp"><link rel="preload" as="image" href="images/env2_flap.webp"><link rel="preload" as="image" href="images/wax-seal-yy.webp">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Noto+Serif+TC:wght@400;500&display=swap" rel="stylesheet">
-<title>婚禮歡迎函</title>
+<title>易晏&amp;巧宴喜帖</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* A phone-width column. A photographed envelope covers the page; the seal fades, the envelope parts upward and downward, and the invitation scrolls beneath. Single light look by choice. */
@@ -166,12 +166,12 @@ body:not(.revealed) .hero .in > *{opacity:0}
   </div>
   <div class="sr" id="status" role="status" aria-live="polite"></div>
 
-  <section class="intro" id="intro" role="button" tabindex="0" aria-label="輕觸蝴蝶結，開啟歡迎函">
+  <section class="intro" id="intro" role="button" tabindex="0" aria-label="輕觸蝴蝶結，開啟喜帖">
     <div class="pic"><div class="bgblur"></div>
       <div class="rig" id="rig"><video class="vid" id="vid" src="images/invite-intro.mp4?v=4" poster="images/invite-intro-poster.webp?v=4" muted playsinline preload="auto" disablepictureinpicture aria-hidden="true"></video></div>
     </div>
     <div class="hint" aria-hidden="true"><i></i></div>
-    <p class="tap" data-k="tap">輕觸蝴蝶結　開啟歡迎函</p>
+    <p class="tap" data-k="tap">輕觸蝴蝶結　開啟喜帖</p>
   </section>
 
   <canvas id="petals" aria-hidden="true"></canvas>
@@ -297,7 +297,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
 
   /* language */
   var EN = {
-    tap: 'Tap the bow to open', eyebrow: 'The Wedding Of', date: '22 May 2027',
+    tap: 'Tap the bow to open the invitation', eyebrow: 'The Wedding Of', date: '22 May 2027',
     venue: 'Jili Creek Lodge Camp<br>Shanlin Mountain Forest Chapel',
     joinT: 'Join Us To Celebrate<br>Our Wedding', joinP: 'We are so excited to celebrate this special day with you.',
     tlT: 'Time &amp; Location', tlV: 'Jili Creek Lodge Camp · Shanlin Mountain Forest Chapel', tlTime: '6:00 PM', map: 'Open in Google Maps',
@@ -307,8 +307,8 @@ body:not(.revealed) .hero .in > *{opacity:0}
   };
   var ZH = {}, lang = 'zh';
   document.querySelectorAll('[data-k]').forEach(function (el) { if (!(el.getAttribute('data-k') in ZH)) ZH[el.getAttribute('data-k')] = el.innerHTML; });
-  var UI = { zh: { aria: '輕觸蝴蝶結，開啟歡迎函', copied: '已複製', head: '出席回覆', n: '姓名', e: 'Email', a: '是否出席', dd: '飲食需求', m: '留言', yes: '我會出席', no: '很遺憾無法出席' },
-             en: { aria: 'Tap the bow to open the welcome card', copied: 'Copied', head: 'RSVP', n: 'Name', e: 'Email', a: 'Attending', dd: 'Dietary needs', m: 'Message', yes: "Yes, I'll be there", no: "Sorry, I can't make it" } };
+  var UI = { zh: { aria: '輕觸蝴蝶結，開啟喜帖', copied: '已複製', head: '出席回覆', n: '姓名', e: 'Email', a: '是否出席', dd: '飲食需求', m: '留言', yes: '我會出席', no: '很遺憾無法出席' },
+             en: { aria: 'Tap the bow to open the invitation', copied: 'Copied', head: 'RSVP', n: 'Name', e: 'Email', a: 'Attending', dd: 'Dietary needs', m: 'Message', yes: "Yes, I'll be there", no: "Sorry, I can't make it" } };
   function setLang(l) {
     lang = l; var dict = l === 'en' ? EN : ZH;
     document.querySelectorAll('[data-k]').forEach(function (el) { var k = el.getAttribute('data-k'); if (dict[k] != null) el.innerHTML = dict[k]; });
