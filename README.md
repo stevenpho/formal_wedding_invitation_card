@@ -1,1 +1,1 @@
-# formal_wedding_invitation_card
+# wedding_invitation_card
