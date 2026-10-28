@@ -286,10 +286,18 @@ body:not(.revealed) .hero .in > *{opacity:0}
     if (opened || !intro.classList.contains('ready')) return; opened = true;
     intro.classList.add('opened');
     statusEl.textContent = '蝴蝶結已解開';
-    if (reduce || !vid) { swing(); return; }
-    /* when the clip ends the intro fades out and the page follows */
+    if (!vid) { swing(); return; }
+    /* the bow comes undone in the first ~7s of the clip: play that part faster; the doors and card after it play at normal speed.
+       With reduced motion only the bow part is shown (no doors swinging), then the intro fades out. */
+    var BOW_END = 6.9;
+    vid.playbackRate = 1.8;
     vid.addEventListener('ended', function () { setTimeout(swing, 900); }); vid.addEventListener('error', swing);
     var pr = vid.play(); if (pr && pr.catch) pr.catch(swing);
+    (function watch() {
+      if (swung) return;
+      if (vid.currentTime >= BOW_END) { if (reduce) { vid.pause(); swing(); return; } vid.playbackRate = 1; return; }
+      requestAnimationFrame(watch);
+    })();
     setTimeout(swing, 16000);
   }
   intro.addEventListener('click', open);
@@ -349,16 +357,16 @@ body:not(.revealed) .hero .in > *{opacity:0}
   /* falling petals */
   var petalsOn=false;
   function startPetals(){
-    if(petalsOn || matchMedia('(prefers-reduced-motion:reduce)').matches) return; petalsOn=true;
+    if(petalsOn) return; petalsOn=true; var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
     var cv=document.getElementById('petals'), cx=cv.getContext('2d'), W=0,H=0, dpr=Math.min(devicePixelRatio||1,2);
     function size(){ W=innerWidth; H=innerHeight; cv.width=W*dpr; cv.height=H*dpr; cx.setTransform(dpr,0,0,dpr,0,0); }
     size(); addEventListener('resize',size);
     var pink=[['#fff4f6','#f7c9d6'],['#fde0e6','#ee9db5']], lilac=[['#f8f3fd','#dccdf0'],['#efe6f9','#c9b3e6']], pn=0;
-    var N=W<500?22:34, ps=[];
+    var N=rm?8:(W<500?22:34), ps=[];
     function mk(init){
       var set=(pn++%2===0)?pink:lilac, c=set[Math.floor(Math.random()*set.length)];
       return {x:Math.random()*W, y:init?Math.random()*H:-30-Math.random()*H*.4, r:7+Math.random()*8,
-        vy:28+Math.random()*34, sw:20+Math.random()*34, sp:.5+Math.random()*.9, ph:Math.random()*6.28,
+        vy:(28+Math.random()*34)*(rm?.6:1), sw:(20+Math.random()*34)*(rm?.6:1), sp:.5+Math.random()*.9, ph:Math.random()*6.28,
         rot:Math.random()*6.28, vr:(Math.random()-.5)*1.6, fl:Math.random()*6.28, vf:1+Math.random()*1.6, c:c, a:.7+Math.random()*.3};
     }
     for(var i=0;i<N;i++) ps.push(mk(true));
