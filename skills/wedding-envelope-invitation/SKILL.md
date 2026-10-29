@@ -37,6 +37,15 @@ intro 信封 → hero（城堡照背景 + 紗幔花拱 + 姓名/日期/場地）
 - 隱藏的預覽窗格會自動暫停影片,**看不到真實播放**;ffmpeg 截圖只能證明檔案沒問題。要驗證播放行為用上面的腳本,或 iOS 模擬器 `xcrun simctl io booted recordVideo` 錄影再用 ffmpeg 切格檢查(模擬器預設不開減少動態)。
 - 使用者回報「演兩遍」的教訓:先確認手機是否快取了舊的 `index.html`(Safari 會快取),請用帶新參數的網址(`?t=2`)重載,再下結論;不要未驗證就宣稱已修好。
 
+## 2.66 交付前必做:載入效能與實際網路(本機測試看不出來)
+使用者是在手機 4G 開線上網址,不是 localhost。每次交付前都要檢查,不能只驗功能:
+1. 列出 `index.html` 一開始就載入的資源與大小(`grep` 圖片/影片/字體/腳本,再 `stat`),首屏(poster + 影片)以外的大圖要 `loading="lazy"` 或 `fetchpriority="low"`。
+2. `<head>` 不放擋渲染的外部資源:Google Fonts 用 `media="print" onload="this.media='all'"` + `preconnect`;不要 `preload` 沒用到的圖(舊版信封圖曾白白預載約 0.86MB)。
+3. 開場影片 ≤ 約 1MB;poster 用 `fetchpriority="high"` 預載。
+4. 點擊後影片要等緩衝時,畫面要有「載入中」之類的回饋,不能看起來沒反應。
+5. 推送前用線上網址或限速(Chrome DevTools Slow 4G)實際跑一次,並用 `curl -I` 確認線上檔案與本機一致、支援 Range。
+6. 回報「修好了」前,說明哪些是實測、哪些只是推測。
+
 ## 2.7 預覽與提交的注意事項
 - 預覽窗格隱藏時,瀏覽器會暫停影片、不跑 CSS transition:影片用 `ffmpeg` 抽格看(`select='eq(n,…)',tile=`),後半段用 JS 觸發 `swing()`(把 `setTimeout` 換成立即執行)看主頁。
 - `python3 -m http.server` 不支援影片 Range 請求:電腦瀏覽器正常,但 iPhone Safari 用區網連線時影片可能播不出來,上線(如 GitHub Pages)才正常。不要因此誤判影片壞了。
