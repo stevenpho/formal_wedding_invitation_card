@@ -45,6 +45,9 @@ intro 信封 → hero（城堡照背景 + 紗幔花拱 + 姓名/日期/場地）
 4. 點擊後影片要等緩衝時,畫面要有「載入中」之類的回饋,不能看起來沒反應。
 5. 推送前用線上網址或限速(Chrome DevTools Slow 4G)實際跑一次,並用 `curl -I` 確認線上檔案與本機一致、支援 Range。
 6. 回報「修好了」前,說明哪些是實測、哪些只是推測。
+7. 行動網路(4G)下 Safari 不會預載影片,點擊後才開始抓:`open()` 要有保險——點擊後 5 秒影片仍未開始(`currentTime < 0.1`)就直接 `swing()` 進正式頁面,不要讓訪客卡在蝴蝶結;另有 16 秒總逾時。
+8. iOS 模擬器測試注意:`xcrun simctl openurl` 在 Safari 停在網址輸入狀態時會被忽略,卡住就 `simctl shutdown`/`boot` 重開再 `openurl`;用 `simctl io booted recordVideo` 錄影時,工具呼叫可能延遲,點擊時間不準,單一錄影的「沒反應」不能當成重現證據,要搭配程式端檢查(如瀏覽器窗格執行 JS 看 `vid.paused/currentTime`)。
+9. 區網預覽的 IP 會變(曾由 192.168.50.30 變 .202),手機打不開先用 `ifconfig` 確認目前 IP。
 
 ## 2.7 預覽與提交的注意事項
 - 預覽窗格隱藏時,瀏覽器會暫停影片、不跑 CSS transition:影片用 `ffmpeg` 抽格看(`select='eq(n,…)',tile=`),後半段用 JS 觸發 `swing()`(把 `setTimeout` 換成立即執行)看主頁。
