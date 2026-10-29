@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>playback-test</title>
+<!-- 用法見 tests/run-playback-test.sh:在真正的瀏覽器引擎播放 index.html 的開場影片,
+     檢查 currentTime 是否只往前走(不重播、不倒退)與 ended 次數。 -->
+<iframe id="f" src="../index.html" style="width:390px;height:844px"></iframe>
+<pre id="out">running</pre>
+<script>
+var f = document.getElementById('f'), log = [], last = -1, back = 0, ended = 0, seeks = 0, plays = 0;
+f.onload = function () {
+  var d = f.contentDocument, v = d.getElementById('vid');
+  v.addEventListener('timeupdate', function () { if (v.currentTime + 0.05 < last) back++; last = v.currentTime; });
+  v.addEventListener('ended', function () { ended++; });
+  v.addEventListener('seeking', function () { seeks++; });
+  v.addEventListener('play', function () { plays++; });
+  setTimeout(function () { (d.querySelector('.hint') || d.getElementById('intro')).click(); }, 1500);
+  setTimeout(function () {
+    var ok = back === 0 && ended <= 1 && plays === 1 && last > 6.8;
+    document.getElementById('out').textContent = 'RESULT ' + (ok ? 'PASS' : 'FAIL') +
+      ' backwardJumps=' + back + ' ended=' + ended + ' plays=' + plays + ' seeks=' + seeks + ' lastTime=' + last.toFixed(2);
+  }, 12000);
+};
+</script>

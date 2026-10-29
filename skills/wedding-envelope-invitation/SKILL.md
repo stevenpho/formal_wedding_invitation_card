@@ -19,18 +19,23 @@ intro 信封 → hero（城堡照背景 + 紗幔花拱 + 姓名/日期/場地）
 
 ## 2.5 目前採用:影片開場(優先使用)
 - 開場是單一直式影片 `images/invite-intro.mp4`(720×1280、約 10 秒、靜音、約 1MB)＋封面圖 `images/invite-intro-poster.webp`(影片第一格)。影片內容:蝴蝶結解開 → 兩扇門打開 → 內頁卡片(卡片上的字是影片裡的,不用 HTML 疊字)。
-- 結構:`.intro > .rig > <video muted playsinline preload="auto" poster>`,`fit()` 以 cover 置中。點擊 → `vid.play()`(蝴蝶結解開段用 `playbackRate = 1.8` 加快,播過約 6.9 秒——緞帶抽完、門還沒動——用 `requestAnimationFrame` 逐幀檢查後改回 1 倍,不要用 `timeupdate`,頻率太低會切過頭);`ended` 後約 0.9 秒呼叫 `swing()`(intro 淡出、解鎖捲動、加 `revealed`、啟動花瓣、最後 `display:none`)。`error`、`play()` 被拒、逾時(16 秒)都直接 `swing()` 當保險。
+- 結構:`.intro > .rig > <video muted playsinline preload="auto" poster>`,`fit()` 以 cover 置中。點擊 → `vid.play()`;**蝴蝶結段的加速直接烤進影片檔**(ffmpeg `trim`+`setpts=(PTS-STARTPTS)/1.8`+`concat`+`fps=24`,前約 6.9 秒原片以 1.8 倍速、之後正常速,輸出約 6.9 秒),**不要在執行時改 `playbackRate`**(曾與蝴蝶結重播的回報同時出現,已移除)。`ended` 後約 0.6 秒呼叫 `swing()`(intro 淡出、解鎖捲動、加 `revealed`、啟動花瓣、最後 `display:none`);白色卡片不要停太久(影片結尾本身已停約 2 秒)。`error`、`play()` 被拒、逾時(16 秒)都直接 `swing()` 當保險。
 - 換影片流程:原檔放 `source/`;用 `ffmpeg -an -c:v libx264 -crf 24 -preset slow -pix_fmt yuv420p -movflags +faststart` 轉成 `images/invite-intro.mp4`;用 `ffmpeg -frames:v 1` 抽第一格存成 poster webp;`index.html` 裡影片 `src`、`poster`、預載路徑的 `?v=N` 加 1(檔名不變時瀏覽器會用舊快取,曾出現換了影片仍顯示舊畫面)。
 - 檔名只用英文小寫、數字、連字號,不要中文與空格。
 - 影片裡的文字(如「誠摯歡迎」)要改就得重產影片;不要用程式逐格修補影片,除非使用者要求。
 - 提示字(「輕觸蝴蝶結　開啟喜帖」)放在底部(`bottom` 約 2.4svh),避免蓋到封面圖上印的字。
 
 ## 2.6 減少動態效果(iPhone 常開)
-- **不要用倍率壓縮計時**(曾寫 `K = reduce ? 0.01 : 1`,導致遮罩瞬間消失)。reduce 用固定秒數:約 0.7 秒顯示頁面、1.4 秒移除開場。
-- reduce 時只播影片的蝴蝶結解開段(到約 6.9 秒就 `pause()` 並淡出,不播兩扇門擺開的大位移),保留一點動畫;不要把 `<video>` 設成 `display:none`(會變成空白)。淡出約 0.6 秒。
+- **不要用倍率壓縮計時**(曾寫 `K = reduce ? 0.01 : 1`,導致遮罩瞬間消失)。開場計時 reduce 與一般相同。
+- 開場影片要等訪客點蝴蝶結才播,屬使用者主動觸發,**reduce 與一般模式都播完整影片**(使用者明確要求);reduce 只減弱環境動態。不要把 `<video>` 設成 `display:none`(會變成空白)。
 - reduce 時花瓣不要整個關掉,改成少量(約 8 片)、速度與搖擺約 60%,讓畫面仍有氣氛。
 - CSS reduce 區塊:`.fx`、`.art.fx`、`.art.fx.show` 設 `opacity:1; transform:none; scale:1; filter:none; translate:none; transition:none`(`.art.fx` 特異性較高,只寫 `.fx` 蓋不到);關掉循環動畫與 hero 文字上浮。
 - 驗證:複製一份測試頁,把 `@media (prefers-reduced-motion:reduce)` 換成 `@media all`、`var reduce = ...` 設成 `true`,驗完刪除。iOS 模擬器與實體機的實際行為要另外實測,不能只靠這個模擬。
+
+## 2.65 自動化播放測試(改過影片/開場邏輯必跑)
+- `tests/run-playback-test.sh`(可加 `norange`):用真實 Chrome headless 載入頁面、模擬點擊,檢查影片 `currentTime` 不倒退、只 `play` 一次、播到結尾,輸出 `RESULT PASS/FAIL`。
+- 隱藏的預覽窗格會自動暫停影片,**看不到真實播放**;ffmpeg 截圖只能證明檔案沒問題。要驗證播放行為用上面的腳本,或 iOS 模擬器 `xcrun simctl io booted recordVideo` 錄影再用 ffmpeg 切格檢查(模擬器預設不開減少動態)。
+- 使用者回報「演兩遍」的教訓:先確認手機是否快取了舊的 `index.html`(Safari 會快取),請用帶新參數的網址(`?t=2`)重載,再下結論;不要未驗證就宣稱已修好。
 
 ## 2.7 預覽與提交的注意事項
 - 預覽窗格隱藏時,瀏覽器會暫停影片、不跑 CSS transition:影片用 `ffmpeg` 抽格看(`select='eq(n,…)',tile=`),後半段用 JS 觸發 `swing()`(把 `setTimeout` 換成立即執行)看主頁。

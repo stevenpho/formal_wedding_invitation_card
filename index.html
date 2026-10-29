@@ -53,7 +53,6 @@ img{display:block; max-width:100%; height:auto}
 @keyframes ripple{0%{transform:scale(.96); opacity:.9}100%{transform:scale(1.7); opacity:0}}
 @keyframes breathe{0%,100%{opacity:.25; transform:scale(.96)}50%{opacity:.9; transform:scale(1.06)}}
 .opened .hint{opacity:0; animation:none}
-@media (prefers-reduced-motion:reduce){.intro.swing{transition:background-color .6s ease,opacity .6s ease}}
 @media (prefers-reduced-motion:reduce){.hint::before,.hint::after,.hint i{animation:none}}
 #petals{position:fixed; inset:0; width:100%; height:100%; z-index:40; pointer-events:none; opacity:0; transition:opacity 2s ease}
 #petals.on{opacity:1}
@@ -168,7 +167,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
 
   <section class="intro" id="intro" role="button" tabindex="0" aria-label="輕觸蝴蝶結，開啟喜帖">
     <div class="pic"><div class="bgblur"></div>
-      <div class="rig" id="rig"><video class="vid" id="vid" src="images/invite-intro.mp4?v=4" poster="images/invite-intro-poster.webp?v=4" muted playsinline preload="auto" disablepictureinpicture aria-hidden="true"></video></div>
+      <div class="rig" id="rig"><video class="vid" id="vid" src="images/invite-intro.mp4?v=5" poster="images/invite-intro-poster.webp?v=4" muted playsinline preload="auto" disablepictureinpicture aria-hidden="true"></video></div>
     </div>
     <div class="hint" aria-hidden="true"><i></i></div>
     <p class="tap" data-k="tap">輕觸蝴蝶結　開啟喜帖</p>
@@ -235,7 +234,6 @@ body:not(.revealed) .hero .in > *{opacity:0}
 <script>
 (function () {
   var body = document.body, intro = document.getElementById('intro');
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var statusEl = document.getElementById('status');
   body.classList.add('locked');
 
@@ -276,28 +274,23 @@ body:not(.revealed) .hero .in > *{opacity:0}
   function swing() {
     if (swung) return; swung = true;
     intro.classList.add('swing');
-    later(reduce ? 700 : 900, function () {
+    later(900, function () {
       window.scrollTo(0, 0);
       body.classList.remove('locked'); body.classList.add('revealed'); intro.style.pointerEvents = 'none'; startPetals();
     });
-    later(reduce ? 1400 : 1800, function () { intro.style.display = 'none'; });
+    later(1800, function () { intro.style.display = 'none'; });
   }
   function open() {
     if (opened || !intro.classList.contains('ready')) return; opened = true;
     intro.classList.add('opened');
     statusEl.textContent = '蝴蝶結已解開';
     if (!vid) { swing(); return; }
-    /* the bow comes undone in the first ~7s of the clip: play that part faster; the doors and card after it play at normal speed.
-       With reduced motion only the bow part is shown (no doors swinging), then the intro fades out. */
-    var BOW_END = 6.9;
-    vid.playbackRate = 1.8;
-    vid.addEventListener('ended', function () { setTimeout(swing, 900); }); vid.addEventListener('error', swing);
+    /* the clip already has the bow part sped up (first ~3.5s) and then the doors/card at normal speed; the speed is baked into the file
+       (a runtime playbackRate change is the suspected cause of the bow playing twice, so it is no longer used).
+       The intro plays in full even with reduced motion: it only starts after the visitor taps the bow, so it is user-initiated;
+       the ambient motion (petals, looping animations, scroll reveals) is still reduced. */
+    vid.addEventListener('ended', function () { setTimeout(swing, 600); }); vid.addEventListener('error', swing);
     var pr = vid.play(); if (pr && pr.catch) pr.catch(swing);
-    (function watch() {
-      if (swung) return;
-      if (vid.currentTime >= BOW_END) { if (reduce) { vid.pause(); swing(); return; } vid.playbackRate = 1; return; }
-      requestAnimationFrame(watch);
-    })();
     setTimeout(swing, 16000);
   }
   intro.addEventListener('click', open);
