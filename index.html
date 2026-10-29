@@ -292,6 +292,8 @@ body:not(.revealed) .hero .in > *{opacity:0}
        the ambient motion (petals, looping animations, scroll reveals) is still reduced. */
     vid.addEventListener('ended', function () { setTimeout(swing, 600); }); vid.addEventListener('error', swing);
     var pr = vid.play(); if (pr && pr.catch) pr.catch(swing);
+    /* slow network (e.g. 4G): if the clip still has not started 5s after the tap, skip the intro instead of leaving the visitor on the bow */
+    setTimeout(function () { if (!swung && vid.currentTime < 0.1) swing(); }, 5000);
     setTimeout(swing, 16000);
   }
   intro.addEventListener('click', open);
