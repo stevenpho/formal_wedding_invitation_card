@@ -79,12 +79,12 @@ img{display:block; max-width:100%; height:auto}
   font:600 13px/1 var(--disp); letter-spacing:.42em; text-indent:.42em; text-transform:uppercase; color:#8a4f6b; text-shadow:0 0 10px rgba(255,255,255,.95),0 0 4px #fff;
   animation:pulse 2.8s ease-in-out infinite; transition:opacity .5s}
 .opened .tap{opacity:0; animation:none}
-.load{position:absolute; left:0; right:0; bottom:calc(env(safe-area-inset-bottom,0px) + 2.4svh); z-index:4; margin:0; display:flex; justify-content:center; align-items:center; gap:.7em; pointer-events:none;
-  font:600 13px/1 var(--disp); letter-spacing:.42em; color:#8a4f6b; text-shadow:0 0 10px rgba(255,255,255,.95),0 0 4px #fff; opacity:0; transition:opacity .3s}
-.load i{width:14px; height:14px; border:2px solid rgba(138,79,107,.25); border-top-color:#8a4f6b; border-radius:50%; animation:spin .9s linear infinite}
-.intro.loading .load{opacity:1}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.load i{animation:none; border-top-color:rgba(138,79,107,.25); border-right-color:#8a4f6b}}
+.load{position:absolute; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 2.4svh); z-index:4; margin:0; width:min(62%,240px); text-align:center; pointer-events:none;
+  font:600 13px/1 var(--disp); letter-spacing:.3em; text-indent:.3em; color:#8a4f6b; text-shadow:0 0 10px rgba(255,255,255,.95),0 0 4px #fff; opacity:0; transition:opacity .4s}
+.load .bar{display:block; height:3px; margin-top:12px; border-radius:3px; background:rgba(138,79,107,.22); overflow:hidden}
+.load .bar i{display:block; height:100%; width:0; background:#8a4f6b; border-radius:3px; transition:width .25s ease}
+.intro.ready:not(.loaded) .load{opacity:1}
+.intro:not(.loaded) .hint,.intro:not(.loaded) .tap{visibility:hidden}
 @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 
 /* hero */
@@ -178,7 +178,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
     </div>
     <div class="hint" aria-hidden="true"><i></i></div>
     <p class="tap" data-k="tap">輕觸蝴蝶結　開啟喜帖</p>
-    <p class="load" aria-hidden="true"><i></i>載入中</p>
+    <div class="load" aria-hidden="true"><span>載入中 <b id="pct">0</b>%</span><span class="bar"><i id="barfill"></i></span></div>
   </section>
 
   <canvas id="petals" aria-hidden="true"></canvas>
@@ -277,19 +277,35 @@ body:not(.revealed) .hero .in > *{opacity:0}
 
   /* opening: the seal fades, the envelope parts upward and downward, the invitation is already underneath */
   var opened = false, swung = false, vid = document.getElementById('vid');
-  /* warm up the clip in the background so it is already local when the visitor taps (mobile Safari does not preload video on cellular);
-     the same file is used, so quality is unchanged. If anything fails the plain <video src> keeps working. */
-  if (vid && window.fetch && window.URL && URL.createObjectURL) {
-    fetch(vid.getAttribute('src')).then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
-      if (swung || vid.currentTime > 0.1) return;
-      vid.src = URL.createObjectURL(b); vid.load();
-      if (opened) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); }
-    }).catch(function () {});
-  }
+  /* load the whole clip first (progress bar), then allow the tap; the same file is used, so quality is unchanged.
+     If the download fails or is too slow, fall back to the plain <video src> after 20s so the visitor is never stuck. */
+  var pctEl = document.getElementById('pct'), barEl = document.getElementById('barfill');
+  function setPct(n) { n = Math.max(0, Math.min(100, Math.round(n))); pctEl.textContent = n; barEl.style.width = n + '%'; }
+  function loaded() { if (intro.classList.contains('loaded')) return; setPct(100); intro.classList.add('loaded'); }
+  (function () {
+    var done = false; function finish() { if (done) return; done = true; loaded(); }
+    setTimeout(finish, 20000);
+    if (!vid || !window.fetch || !window.URL || !URL.createObjectURL) { finish(); return; }
+    fetch(vid.getAttribute('src')).then(function (r) {
+      if (!r.ok) throw 0;
+      var total = +r.headers.get('Content-Length') || 0, got = 0, parts = [];
+      if (!r.body || !r.body.getReader) return r.blob();
+      var rd = r.body.getReader();
+      return (function pump() {
+        return rd.read().then(function (x) {
+          if (x.done) return new Blob(parts, { type: 'video/mp4' });
+          parts.push(x.value); got += x.value.length; if (total) setPct(got / total * 100); return pump();
+        });
+      })();
+    }).then(function (b) {
+      if (!done && !swung) { vid.src = URL.createObjectURL(b); vid.load(); }
+      finish();
+    }).catch(finish);
+  })();
   function later(ms, fn) { setTimeout(fn, ms); }
   /* the clip has ended: fade the intro out and reveal the page */
   function swing() {
-    if (swung) return; swung = true; intro.classList.remove('loading');
+    if (swung) return; swung = true;
     intro.classList.add('swing');
     later(900, function () {
       window.scrollTo(0, 0);
@@ -298,7 +314,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
     later(1800, function () { intro.style.display = 'none'; });
   }
   function open() {
-    if (opened || !intro.classList.contains('ready')) return; opened = true;
+    if (opened || !intro.classList.contains('ready') || !intro.classList.contains('loaded')) return; opened = true;
     intro.classList.add('opened');
     statusEl.textContent = '蝴蝶結已解開';
     if (!vid) { swing(); return; }
@@ -307,9 +323,6 @@ body:not(.revealed) .hero .in > *{opacity:0}
        The intro plays in full even with reduced motion: it only starts after the visitor taps the bow, so it is user-initiated;
        the ambient motion (petals, looping animations, scroll reveals) is still reduced. */
     vid.addEventListener('ended', function () { setTimeout(swing, 600); }); vid.addEventListener('error', swing);
-    /* show a spinner when the clip has not started playing shortly after the tap (slow network) */
-    var loadT = setTimeout(function () { if (!swung && vid.currentTime < 0.1) intro.classList.add('loading'); }, 400);
-    vid.addEventListener('playing', function () { clearTimeout(loadT); intro.classList.remove('loading'); });
     var pr = vid.play(); if (pr && pr.catch) pr.catch(swing);
     /* slow network (e.g. 4G): if the clip still has not started 5s after the tap, skip the intro instead of leaving the visitor on the bow */
     setTimeout(function () { if (!swung && vid.currentTime < 0.1) swing(); }, 5000);

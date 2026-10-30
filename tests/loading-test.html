@@ -1,14 +1,15 @@
 <!doctype html><meta charset="utf-8"><title>loading-test</title>
-<!-- 搭配慢速影片伺服器:點蝴蝶結後 1 秒內影片未開始,intro 應有 .loading;影片開始播放或略過開場後 .loading 應移除。 -->
+<!-- 需真實時間:用 --remote-debugging-port 開 Chrome,等 15 秒後從 http://127.0.0.1:PORT/json 讀頁面 title。搭配慢速影片伺服器(影片延遲數秒):影片載完前 intro 不應有 .loaded、點擊無效;載完後有 .loaded 且進度 100%,之後點擊才會開始。 -->
 <iframe id="f" src="../index.html" style="width:390px;height:844px"></iframe>
 <pre id="out">running</pre>
 <script>
 var f = document.getElementById('f'), r = {};
-f.onload = function () {
-  var d = f.contentDocument, i = d.getElementById('intro'), v = d.getElementById('vid');
-  setTimeout(function () { i.click(); }, 1500);
-  setTimeout(function () { r.at1s = i.classList.contains('loading'); }, 2800);
-  setTimeout(function () { r.playing = !v.paused && v.currentTime > 0.1; r.afterPlay = i.classList.contains('loading') || i.classList.contains('swing'); 
-    document.getElementById('out').textContent = 'RESULT ' + (r.at1s === true && !i.classList.contains('loading') ? 'PASS' : 'FAIL') + ' ' + JSON.stringify(r); }, 9000);
-};
+/* iframe 的 load 事件會等影片載完(video preload 會延遲 load),所以不能用 onload 計時,改從腳本一開始就計時 */
+function I() { var d = f.contentDocument; return d && d.getElementById('intro') ? [d, d.getElementById('intro')] : null; }
+setTimeout(function () { var x = I(); if (!x) return; r.loadedEarly = x[1].classList.contains('loaded'); x[1].click(); r.openedEarly = x[1].classList.contains('opened'); }, 1200);
+setTimeout(function () { var x = I(); if (!x) return; r.loadedLate = x[1].classList.contains('loaded'); r.pct = x[0].getElementById('pct').textContent; x[1].click(); r.openedLate = x[1].classList.contains('opened'); }, 9000);
+setTimeout(function () {
+  var ok = r.loadedEarly === false && r.openedEarly === false && r.loadedLate === true && r.pct === '100' && r.openedLate === true;
+  document.title = document.getElementById('out').textContent = 'RESULT ' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify(r);
+}, 10000);
 </script>
