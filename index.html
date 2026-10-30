@@ -79,6 +79,12 @@ img{display:block; max-width:100%; height:auto}
   font:600 13px/1 var(--disp); letter-spacing:.42em; text-indent:.42em; text-transform:uppercase; color:#8a4f6b; text-shadow:0 0 10px rgba(255,255,255,.95),0 0 4px #fff;
   animation:pulse 2.8s ease-in-out infinite; transition:opacity .5s}
 .opened .tap{opacity:0; animation:none}
+.load{position:absolute; left:0; right:0; bottom:calc(env(safe-area-inset-bottom,0px) + 2.4svh); z-index:4; margin:0; display:flex; justify-content:center; align-items:center; gap:.7em; pointer-events:none;
+  font:600 13px/1 var(--disp); letter-spacing:.42em; color:#8a4f6b; text-shadow:0 0 10px rgba(255,255,255,.95),0 0 4px #fff; opacity:0; transition:opacity .3s}
+.load i{width:14px; height:14px; border:2px solid rgba(138,79,107,.25); border-top-color:#8a4f6b; border-radius:50%; animation:spin .9s linear infinite}
+.intro.loading .load{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.load i{animation:none; border-top-color:rgba(138,79,107,.25); border-right-color:#8a4f6b}}
 @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 
 /* hero */
@@ -172,6 +178,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
     </div>
     <div class="hint" aria-hidden="true"><i></i></div>
     <p class="tap" data-k="tap">輕觸蝴蝶結　開啟喜帖</p>
+    <p class="load" aria-hidden="true"><i></i>載入中</p>
   </section>
 
   <canvas id="petals" aria-hidden="true"></canvas>
@@ -273,7 +280,7 @@ body:not(.revealed) .hero .in > *{opacity:0}
   function later(ms, fn) { setTimeout(fn, ms); }
   /* the clip has ended: fade the intro out and reveal the page */
   function swing() {
-    if (swung) return; swung = true;
+    if (swung) return; swung = true; intro.classList.remove('loading');
     intro.classList.add('swing');
     later(900, function () {
       window.scrollTo(0, 0);
@@ -291,6 +298,9 @@ body:not(.revealed) .hero .in > *{opacity:0}
        The intro plays in full even with reduced motion: it only starts after the visitor taps the bow, so it is user-initiated;
        the ambient motion (petals, looping animations, scroll reveals) is still reduced. */
     vid.addEventListener('ended', function () { setTimeout(swing, 600); }); vid.addEventListener('error', swing);
+    /* show a spinner when the clip has not started playing shortly after the tap (slow network) */
+    var loadT = setTimeout(function () { if (!swung && vid.currentTime < 0.1) intro.classList.add('loading'); }, 400);
+    vid.addEventListener('playing', function () { clearTimeout(loadT); intro.classList.remove('loading'); });
     var pr = vid.play(); if (pr && pr.catch) pr.catch(swing);
     /* slow network (e.g. 4G): if the clip still has not started 5s after the tap, skip the intro instead of leaving the visitor on the bow */
     setTimeout(function () { if (!swung && vid.currentTime < 0.1) swing(); }, 5000);
