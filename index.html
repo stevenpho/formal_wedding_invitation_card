@@ -277,6 +277,15 @@ body:not(.revealed) .hero .in > *{opacity:0}
 
   /* opening: the seal fades, the envelope parts upward and downward, the invitation is already underneath */
   var opened = false, swung = false, vid = document.getElementById('vid');
+  /* warm up the clip in the background so it is already local when the visitor taps (mobile Safari does not preload video on cellular);
+     the same file is used, so quality is unchanged. If anything fails the plain <video src> keeps working. */
+  if (vid && window.fetch && window.URL && URL.createObjectURL) {
+    fetch(vid.getAttribute('src')).then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
+      if (swung || vid.currentTime > 0.1) return;
+      vid.src = URL.createObjectURL(b); vid.load();
+      if (opened) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); }
+    }).catch(function () {});
+  }
   function later(ms, fn) { setTimeout(fn, ms); }
   /* the clip has ended: fade the intro out and reveal the page */
   function swing() {
